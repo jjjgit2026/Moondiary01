@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { PeriodRecord, CycleSettings } from '../types';
-import { getDaysInMonth, getFirstDayOfMonth, getMonthName, isToday } from '../utils/date';
+import { getDaysInMonth, getFirstDayOfMonth, getMonthName, isToday, parseDate } from '../utils/date';
 import { getPredictedPeriodDates, getOvulationDates } from '../utils/date';
 import TermExplanation from './TermExplanation';
 
@@ -14,6 +14,49 @@ interface CalendarProps {
 
 type TermType = 'period' | 'predicted' | 'ovulation' | 'ovulation-day';
 
+const getDaysUntilNextPeriod = (lastPeriodDate: string | null, cycleLength: number): number | null => {
+  if (!lastPeriodDate) return null;
+  
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  const lastDate = parseDate(lastPeriodDate);
+  const nextPeriodDate = new Date(lastDate);
+  nextPeriodDate.setDate(nextPeriodDate.getDate() + cycleLength);
+  
+  if (nextPeriodDate < today) {
+    const daysSinceExpected = Math.floor((today.getTime() - nextPeriodDate.getTime()) / (1000 * 60 * 60 * 24));
+    const cyclesToAdd = Math.floor(daysSinceExpected / cycleLength) + 1;
+    nextPeriodDate.setDate(nextPeriodDate.getDate() + cyclesToAdd * cycleLength);
+  }
+  
+  const diffDays = Math.floor((nextPeriodDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  return diffDays;
+};
+
+const getPeriodReminder = (daysUntil: number): { message: string; symptoms: string[]; tips: string[] } | null => {
+  if (daysUntil === 3) {
+    return {
+      message: '还有3天就要来月经啦',
+      symptoms: ['乳房胀痛', '情绪波动', '轻微腹痛'],
+      tips: ['开始准备卫生巾', '避免生冷食物', '保持充足睡眠']
+    };
+  } else if (daysUntil === 2) {
+    return {
+      message: '还有2天就要来月经啦',
+      symptoms: ['腰酸背痛', '疲劳乏力', '食欲改变'],
+      tips: ['注意保暖', '减少剧烈运动', '多喝水']
+    };
+  } else if (daysUntil === 1) {
+    return {
+      message: '明天就要来月经啦',
+      symptoms: ['小腹坠胀', '情绪烦躁', '头痛'],
+      tips: ['准备好经期用品', '饮食清淡', '放松心情']
+    };
+  }
+  return null;
+};
+
 export default function Calendar({ records, settings, onDateClick, onMonthClick, canShowPrediction = false }: CalendarProps) {
   const now = new Date();
   const [currentYear, setCurrentYear] = useState(now.getFullYear());
@@ -25,6 +68,16 @@ export default function Calendar({ records, settings, onDateClick, onMonthClick,
     const periodRecords = records.filter(r => r.isPeriod).sort((a, b) => b.date.localeCompare(a.date));
     return periodRecords.length > 0 ? periodRecords[0].date : null;
   }, [records]);
+
+  const daysUntilNextPeriod = useMemo(() => {
+    if (!canShowPrediction || !lastPeriodDate) return null;
+    return getDaysUntilNextPeriod(lastPeriodDate, settings.cycleLength);
+  }, [canShowPrediction, lastPeriodDate, settings.cycleLength]);
+
+  const periodReminder = useMemo(() => {
+    if (daysUntilNextPeriod === null || daysUntilNextPeriod > 3 || daysUntilNextPeriod < 0) return null;
+    return getPeriodReminder(daysUntilNextPeriod);
+  }, [daysUntilNextPeriod]);
 
   const predictedPeriodDates = useMemo(() => {
     if (!canShowPrediction || !lastPeriodDate) return [];
@@ -144,6 +197,33 @@ export default function Calendar({ records, settings, onDateClick, onMonthClick,
         </button>
       </div>
 
+      {periodReminder && (
+        <div className="period-reminder">
+          <div className="reminder-header">
+            <span className="reminder-icon">🔔</span>
+            <span className="reminder-message">{periodReminder.message}</span>
+          </div>
+          <div className="reminder-content">
+            <div className="reminder-section">
+              <span className="section-label">可能出现的症状：</span>
+              <div className="tag-list">
+                {periodReminder.symptoms.map((symptom, index) => (
+                  <span key={index} className="tag symptom-tag">{symptom}</span>
+                ))}
+              </div>
+            </div>
+            <div className="reminder-section">
+              <span className="section-label">温馨提示：</span>
+              <div className="tag-list">
+                {periodReminder.tips.map((tip, index) => (
+                  <span key={index} className="tag tip-tag">{tip}</span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="weekdays">
         {['日', '一', '二', '三', '四', '五', '六'].map((day) => (
           <div key={day} className="weekday">{day}</div>
@@ -166,6 +246,24 @@ export default function Calendar({ records, settings, onDateClick, onMonthClick,
                 {item.date === ovulationDay && (
                   <span className="ovulation-indicator" />
                 )}
+                {(() => {
+                  const record = records.find(r => r.date === item.date);
+                  if (record && (record.flow || record.symptoms && record.symptoms.length > 0 || record.mood || record.note)) {
+                    return <span className="record-indicator" />;
+                  }
+                  return null;
+                })()}
+                {(() => {
+                  const record = records.find(r => r.date === item.date);
+                  if (record && record.weight !== undefined && record.weight !== null) {
+                    return (
+                      <span className="weight-indicator" title={`体重: ${record.weight}kg`}>
+                        {record.weight}
+                      </span>
+                    );
+                  }
+                  return null;
+                })()}
               </>
             )}
           </button>
@@ -173,15 +271,22 @@ export default function Calendar({ records, settings, onDateClick, onMonthClick,
       </div>
 
       <div className="legend">
-        <div className="legend-item" onClick={() => handleTermClick('period')}>
-          <span className="legend-dot period" />
-          <span className="legend-text">月经期</span>
-          {!canShowPrediction && (
-            <svg className="legend-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M9 5l7 7-7 7" />
-            </svg>
-          )}
-        </div>
+        {records.length === 0 ? (
+          <div className="legend-item">
+            <span className="legend-dot period" />
+            <span className="legend-text">点击任意日期设置月经状态</span>
+          </div>
+        ) : (
+          <div className="legend-item" onClick={() => handleTermClick('period')}>
+            <span className="legend-dot period" />
+            <span className="legend-text">月经期</span>
+            {!canShowPrediction && (
+              <svg className="legend-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M9 5l7 7-7 7" />
+              </svg>
+            )}
+          </div>
+        )}
         {canShowPrediction && (
           <>
             <div className="legend-item" onClick={() => handleTermClick('predicted')}>

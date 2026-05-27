@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { PeriodRecord } from '../types';
-import { getDaysInMonth, getFirstDayOfMonth, getMonthName, formatDate, isToday } from '../utils/date';
+import { getDaysInMonth, getFirstDayOfMonth, getMonthName, isToday } from '../utils/date';
 
 interface YearCalendarProps {
   records: PeriodRecord[];
@@ -17,11 +17,6 @@ export default function YearCalendar({ records, currentYear, onBack }: YearCalen
 
   const handleNextYear = () => {
     setYear(prev => prev + 1);
-  };
-
-  const handleToday = () => {
-    const todayYear = new Date().getFullYear();
-    setYear(todayYear);
   };
 
   const renderMonth = (month: number) => {
@@ -86,20 +81,6 @@ export default function YearCalendar({ records, currentYear, onBack }: YearCalen
             </svg>
           </button>
         </div>
-        <button 
-          className="today-btn" 
-          onClick={(e) => {
-            e.stopPropagation();
-            handleToday();
-          }}
-          style={{
-            zIndex: 9999,
-            position: 'relative',
-            pointerEvents: 'auto',
-          }}
-        >
-          回今天
-        </button>
       </div>
 
       <div className="year-cal-content">

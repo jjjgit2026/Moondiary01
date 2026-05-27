@@ -4,6 +4,7 @@ export interface PeriodRecord {
   flow?: 'light' | 'medium' | 'heavy';
   symptoms?: string[];
   mood?: 'happy' | 'neutral' | 'sad' | 'angry' | 'anxious' | 'tired';
+  weight?: number;
   note?: string;
 }
 
@@ -15,6 +16,7 @@ export interface CycleSettings {
 export interface UserData {
   id: string;
   nickname: string;
+  birthYear: number;
   records: PeriodRecord[];
   settings: CycleSettings;
 }

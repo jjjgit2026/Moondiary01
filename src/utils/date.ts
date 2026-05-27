@@ -6,7 +6,17 @@ export const formatDate = (date: Date): string => {
 };
 
 export const parseDate = (dateStr: string): Date => {
-  const [year, month, day] = dateStr.split('-').map(Number);
+  if (!dateStr || typeof dateStr !== 'string') {
+    return new Date();
+  }
+  const parts = dateStr.split('-');
+  if (parts.length !== 3) {
+    return new Date();
+  }
+  const [year, month, day] = parts.map(Number);
+  if (isNaN(year) || isNaN(month) || isNaN(day)) {
+    return new Date();
+  }
   return new Date(year, month - 1, day);
 };
 
@@ -54,7 +64,6 @@ export const getPredictedPeriodDates = (lastPeriodDate: string, cycleLength: num
 export const getOvulationDates = (lastPeriodDate: string, cycleLength: number): string[] => {
   const dates: string[] = [];
   for (let cycle = 1; cycle <= 3; cycle++) {
-    const ovulationDay = cycleLength - 14;
     const ovulationDate = parseDate(getNextCycleDate(lastPeriodDate, cycleLength * cycle));
     ovulationDate.setDate(ovulationDate.getDate() - 14);
     

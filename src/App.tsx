@@ -5,6 +5,7 @@ import {
   createUser, 
   switchUser, 
   updateNickname, 
+  updateBirthYear,
   updateUserSettings, 
   updateUserRecords,
   addRecord 
@@ -15,9 +16,11 @@ import RecordForm from './components/RecordForm';
 import Analysis from './components/Analysis';
 import Settings from './components/Settings';
 import Welcome from './components/Welcome';
+import PeriodKnowledge from './components/PeriodKnowledge';
 import './App.css';
 
 type TabType = 'calendar' | 'analysis' | 'settings';
+type PageType = 'main' | 'knowledge';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<UserData | null>(null);
@@ -25,6 +28,7 @@ export default function App() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [showWelcome, setShowWelcome] = useState(true);
   const [showYearCalendar, setShowYearCalendar] = useState(false);
+  const [currentPage, setCurrentPage] = useState<PageType>('main');
 
   useEffect(() => {
     const data = loadData();
@@ -37,8 +41,8 @@ export default function App() {
     }
   }, []);
 
-  const handleCreateUser = useCallback((nickname: string) => {
-    const data = createUser(nickname);
+  const handleCreateUser = useCallback((nickname: string, periodLength: number, cycleLength: number, birthYear: number) => {
+    const data = createUser(nickname, periodLength, cycleLength, birthYear);
     const user = data.users.find(u => u.id === data.currentUserId);
     setCurrentUser(user || null);
     setShowWelcome(false);
@@ -53,6 +57,14 @@ export default function App() {
   const handleUpdateNickname = useCallback((nickname: string) => {
     if (currentUser) {
       const data = updateNickname(currentUser.id, nickname);
+      const user = data.users.find(u => u.id === data.currentUserId);
+      setCurrentUser(user || null);
+    }
+  }, [currentUser]);
+
+  const handleUpdateBirthYear = useCallback((birthYear: number) => {
+    if (currentUser) {
+      const data = updateBirthYear(currentUser.id, birthYear);
       const user = data.users.find(u => u.id === data.currentUserId);
       setCurrentUser(user || null);
     }
@@ -181,64 +193,78 @@ export default function App() {
 
   return (
     <div className="app">
-      {activeTab !== 'settings' && (
+      {currentPage === 'knowledge' ? (
+        <PeriodKnowledge onBack={() => {
+          setCurrentPage('main');
+          setActiveTab('calendar');
+        }} />
+      ) : (
         <>
-          <header className="header">
-            <div className="header-content">
-              <div className="user-info">
-                <span className="user-icon">👤</span>
-                <span className="user-nickname">{currentUser.nickname}</span>
+          {activeTab !== 'settings' && (
+            <header className="header">
+              <div className="header-content">
+                <div className="user-info">
+                  <span className="user-icon">👧</span>
+                  <div className="user-detail">
+                    <span className="user-nickname">{currentUser.nickname}</span>
+                    <span className="user-age">{Math.max(0, new Date().getFullYear() - currentUser.birthYear)}岁</span>
+                  </div>
+                </div>
+                <button 
+                  className="knowledge-btn"
+                  onClick={() => setCurrentPage('knowledge')}
+                >
+                  <span className="knowledge-icon">📚</span>
+                  <span className="knowledge-text">小知识</span>
+                </button>
               </div>
-              <button 
-                className="analysis-btn"
-                onClick={() => setActiveTab('analysis')}
-              >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M18 20V10M12 20V4M6 20v-6" />
-                </svg>
-                <span>分析</span>
-              </button>
-            </div>
-          </header>
+            </header>
+          )}
 
-          <main className="main-content">
-            {activeTab === 'calendar' && !showYearCalendar && (
-              <Calendar 
-                records={currentUser.records} 
-                settings={currentUser.settings} 
-                onDateClick={handleDateClick}
-                onMonthClick={() => setShowYearCalendar(true)}
-                canShowPrediction={canShowPrediction}
-              />
-            )}
-            {activeTab === 'calendar' && showYearCalendar && (
-              <YearCalendar
-                records={currentUser.records}
-                currentYear={new Date().getFullYear()}
-                onBack={() => setShowYearCalendar(false)}
-              />
-            )}
-            {activeTab === 'analysis' && (
-              <Analysis records={currentUser.records} settings={currentUser.settings} />
-            )}
-          </main>
+          {activeTab === 'calendar' && !showYearCalendar && (
+            <Calendar 
+              records={currentUser.records} 
+              settings={currentUser.settings} 
+              onDateClick={handleDateClick}
+              onMonthClick={() => setShowYearCalendar(true)}
+              canShowPrediction={canShowPrediction}
+            />
+          )}
+          {activeTab === 'calendar' && showYearCalendar && (
+            <YearCalendar
+              records={currentUser.records}
+              currentYear={new Date().getFullYear()}
+              onBack={() => setShowYearCalendar(false)}
+            />
+          )}
+          {activeTab === 'analysis' && currentUser && (
+            <Analysis 
+              records={currentUser.records || []} 
+              settings={currentUser.settings || { periodLength: 5, cycleLength: 28 }} 
+              birthYear={currentUser.birthYear || new Date().getFullYear() - 16}
+            />
+          )}
+          {activeTab === 'settings' && (
+            <Settings
+              user={currentUser}
+              onSettingsChange={handleSettingsChange}
+              onUpdateNickname={handleUpdateNickname}
+              onUpdateBirthYear={handleUpdateBirthYear}
+              onSwitchUser={handleSwitchUser}
+              onCreateUser={handleCreateUser}
+            />
+          )}
+
         </>
-      )}
-
-      {activeTab === 'settings' && (
-        <Settings 
-          user={currentUser}
-          onSettingsChange={handleSettingsChange}
-          onUpdateNickname={handleUpdateNickname}
-          onSwitchUser={handleSwitchUser}
-          onCreateUser={handleCreateUser}
-        />
       )}
 
       <nav className="bottom-nav">
         <button 
           className={`nav-item ${activeTab === 'calendar' ? 'active' : ''}`}
-          onClick={() => setActiveTab('calendar')}
+          onClick={() => {
+            setActiveTab('calendar');
+            setCurrentPage('main');
+          }}
         >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
@@ -250,7 +276,10 @@ export default function App() {
         </button>
         <button 
           className={`nav-item ${activeTab === 'analysis' ? 'active' : ''}`}
-          onClick={() => setActiveTab('analysis')}
+          onClick={() => {
+            setActiveTab('analysis');
+            setCurrentPage('main');
+          }}
         >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M18 20V10M12 20V4M6 20v-6" />
@@ -259,7 +288,10 @@ export default function App() {
         </button>
         <button 
           className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`}
-          onClick={() => setActiveTab('settings')}
+          onClick={() => {
+            setActiveTab('settings');
+            setCurrentPage('main');
+          }}
         >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />

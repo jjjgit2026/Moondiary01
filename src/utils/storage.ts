@@ -7,9 +7,10 @@ const defaultSettings: CycleSettings = {
   cycleLength: 0,
 };
 
-const createNewUser = (nickname: string): UserData => ({
+const createNewUser = (nickname: string, birthYear: number = new Date().getFullYear() - 16): UserData => ({
   id: Date.now().toString(),
   nickname,
+  birthYear,
   records: [],
   settings: { ...defaultSettings },
 });
@@ -24,8 +25,23 @@ export const loadData = (): AppData => {
     const data = localStorage.getItem(STORAGE_KEY);
     if (data) {
       const parsed = JSON.parse(data);
-      if (parsed.users && Array.isArray(parsed.users)) {
-        return parsed as AppData;
+      if (parsed && typeof parsed === 'object' && parsed.users && Array.isArray(parsed.users)) {
+        const validatedUsers = parsed.users.filter((user: unknown) => {
+          if (typeof user !== 'object' || user === null) return false;
+          const u = user as UserData;
+          return (
+            typeof u.id === 'string' &&
+            typeof u.nickname === 'string' &&
+            Array.isArray(u.records) &&
+            typeof u.settings === 'object' &&
+            u.settings !== null
+          );
+        });
+        
+        return {
+          currentUserId: typeof parsed.currentUserId === 'string' ? parsed.currentUserId : '',
+          users: validatedUsers,
+        };
       } else {
         return getDefaultData();
       }
@@ -54,9 +70,15 @@ export const addRecord = (records: PeriodRecord[], record: PeriodRecord): Period
   return [...records, record];
 };
 
-export const createUser = (nickname: string): AppData => {
+export const createUser = (nickname: string, periodLength: number = 5, cycleLength: number = 28, birthYear: number = new Date().getFullYear() - 16): AppData => {
   const data = loadData();
-  const newUser = createNewUser(nickname);
+  const newUser = {
+    ...createNewUser(nickname, birthYear),
+    settings: {
+      periodLength,
+      cycleLength,
+    },
+  };
   data.users.push(newUser);
   data.currentUserId = newUser.id;
   saveData(data);
@@ -75,6 +97,16 @@ export const updateNickname = (userId: string, nickname: string): AppData => {
   const userIndex = data.users.findIndex(u => u.id === userId);
   if (userIndex >= 0) {
     data.users[userIndex].nickname = nickname;
+    saveData(data);
+  }
+  return data;
+};
+
+export const updateBirthYear = (userId: string, birthYear: number): AppData => {
+  const data = loadData();
+  const userIndex = data.users.findIndex(u => u.id === userId);
+  if (userIndex >= 0) {
+    data.users[userIndex].birthYear = birthYear;
     saveData(data);
   }
   return data;
@@ -122,13 +154,74 @@ export const exportData = (): string => {
 
 export const importData = (jsonString: string): boolean => {
   try {
-    const data = JSON.parse(jsonString) as AppData;
-    if (data.users && Array.isArray(data.users)) {
+    if (!jsonString || typeof jsonString !== 'string') {
+      return false;
+    }
+    
+    const parsed = JSON.parse(jsonString);
+    
+    if (!parsed || typeof parsed !== 'object') {
+      return false;
+    }
+    
+    const data: AppData = {
+      currentUserId: typeof parsed.currentUserId === 'string' ? parsed.currentUserId : '',
+      users: [],
+    };
+    
+    if (!parsed.users || !Array.isArray(parsed.users)) {
       saveData(data);
       return true;
     }
-    return false;
-  } catch {
+    
+    for (const user of parsed.users) {
+      if (typeof user !== 'object' || user === null) continue;
+      
+      const userId = typeof user.id === 'string' ? user.id : Date.now().toString();
+      const nickname = typeof user.nickname === 'string' ? user.nickname : '用户';
+      
+      const records: PeriodRecord[] = [];
+      if (Array.isArray(user.records)) {
+        for (const record of user.records) {
+          if (typeof record !== 'object' || record === null) continue;
+          if (typeof record.date !== 'string') continue;
+          
+          records.push({
+            date: record.date,
+            isPeriod: typeof record.isPeriod === 'boolean' ? record.isPeriod : false,
+            flow: record.flow === 'light' || record.flow === 'medium' || record.flow === 'heavy' ? record.flow : undefined,
+            symptoms: Array.isArray(record.symptoms) ? record.symptoms : undefined,
+            mood: record.mood === 'happy' || record.mood === 'neutral' || record.mood === 'sad' || record.mood === 'angry' || record.mood === 'anxious' || record.mood === 'tired' ? record.mood : undefined,
+            weight: typeof record.weight === 'number' && record.weight > 0 && record.weight <= 200 ? record.weight : undefined,
+            note: typeof record.note === 'string' ? record.note : undefined,
+          });
+        }
+      }
+      
+      const settings: CycleSettings = {
+        periodLength: typeof user.settings?.periodLength === 'number' ? user.settings.periodLength : 5,
+        cycleLength: typeof user.settings?.cycleLength === 'number' ? user.settings.cycleLength : 28,
+      };
+      
+      const birthYear = typeof user.birthYear === 'number' ? user.birthYear : new Date().getFullYear() - 16;
+      
+      data.users.push({
+        id: userId,
+        nickname,
+        birthYear,
+        records,
+        settings,
+      });
+    }
+    
+    if (data.users.length > 0 && !data.currentUserId) {
+      data.currentUserId = data.users[0].id;
+    }
+    
+    saveData(data);
+    return true;
+  } catch (error) {
+    console.error('Import data error:', error);
     return false;
   }
 };

@@ -3,29 +3,57 @@ import { UserData } from '../types';
 
 interface WelcomeProps {
   users: UserData[];
-  onCreateUser: (nickname: string) => void;
+  onCreateUser: (nickname: string, periodLength: number, cycleLength: number, birthYear: number) => void;
   onSwitchUser: (userId: string) => void;
 }
 
 export default function Welcome({ users = [], onCreateUser, onSwitchUser }: WelcomeProps) {
+  const [showModal, setShowModal] = useState(false);
   const [nickname, setNickname] = useState('');
   const [showError, setShowError] = useState(false);
+  const [periodLength, setPeriodLength] = useState(5);
+  const [cycleLength, setCycleLength] = useState(28);
+  const [birthYear, setBirthYear] = useState(new Date().getFullYear() - 16);
+  const [showPickerModal, setShowPickerModal] = useState(false);
+  const [pickerType, setPickerType] = useState<'period' | 'cycle'>('period');
+  const [tempPeriodLength, setTempPeriodLength] = useState(5);
+  const [tempCycleLength, setTempCycleLength] = useState(28);
+
+  const periodOptions = Array.from({ length: 14 }, (_, i) => 2 + i);
+  const cycleOptions = Array.from({ length: 46 }, (_, i) => 15 + i);
 
   const handleSubmit = () => {
     const trimmed = nickname.trim();
     if (trimmed.length > 0 && trimmed.length <= 20) {
-      onCreateUser(trimmed);
+      onCreateUser(trimmed, periodLength, cycleLength, birthYear);
       setNickname('');
+      setPeriodLength(5);
+      setCycleLength(28);
+      setBirthYear(new Date().getFullYear() - 16);
+      setShowModal(false);
       setShowError(false);
     } else {
       setShowError(true);
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSubmit();
+  const handleOpenPicker = (type: 'period' | 'cycle') => {
+    setPickerType(type);
+    if (type === 'period') {
+      setTempPeriodLength(periodLength);
+    } else {
+      setTempCycleLength(cycleLength);
     }
+    setShowPickerModal(true);
+  };
+
+  const handlePickerConfirm = () => {
+    if (pickerType === 'period') {
+      setPeriodLength(tempPeriodLength);
+    } else {
+      setCycleLength(tempCycleLength);
+    }
+    setShowPickerModal(false);
   };
 
   return (
@@ -45,35 +73,143 @@ export default function Welcome({ users = [], onCreateUser, onSwitchUser }: Welc
                   className="user-item"
                   onClick={() => onSwitchUser(user.id)}
                 >
-                  <span className="user-avatar">👤</span>
-                  <span className="user-name">{user.nickname}</span>
+                  <span className="user-avatar">👧</span>
+                  <div className="user-detail-welcome">
+                    <span className="user-name">{user.nickname}</span>
+                    <span className="user-age-welcome">{Math.max(0, new Date().getFullYear() - user.birthYear)}岁</span>
+                  </div>
                 </button>
               ))}
             </div>
           </div>
         )}
 
-        <div className="create-user">
-          <h3 className="create-title">{users && users.length > 0 ? '或添加新用户' : '创建新用户'}</h3>
-          <input
-            type="text"
-            className="nickname-input"
-            placeholder="请输入昵称"
-            value={nickname}
-            onChange={(e) => {
-              setNickname(e.target.value);
-              setShowError(false);
-            }}
-            onKeyPress={handleKeyPress}
-          />
-          {showError && (
-            <span className="error-text">请输入1-20个字符的昵称</span>
-          )}
-          <button className="create-btn" onClick={handleSubmit}>
-            开始记录
-          </button>
-        </div>
+        <button className="create-btn" onClick={() => setShowModal(true)}>
+          {users && users.length > 0 ? '添加新用户' : '创建新用户'}
+        </button>
       </div>
+
+      {showModal && (
+        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+          <div className="modal-content full-width" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>创建新用户</h3>
+              <button className="close-btn" onClick={() => setShowModal(false)}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M18 6L6 18M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="form-section">
+              <input
+                type="text"
+                className="nickname-input-modal"
+                placeholder="请输入昵称"
+                value={nickname}
+                onChange={(e) => {
+                  setNickname(e.target.value);
+                  setShowError(false);
+                }}
+                maxLength={20}
+              />
+              {showError && (
+                <span className="error-message">请输入1-20个字符的昵称</span>
+              )}
+
+              <div className="cycle-settings-form">
+                <p className="form-description">您的月经大概持续几天？</p>
+                <div className="cycle-setting-row" onClick={() => handleOpenPicker('period')}>
+                  <div className="cycle-setting-icon">💧</div>
+                  <div className="cycle-setting-info">
+                    <span className="cycle-setting-label">经期长度</span>
+                  </div>
+                  <div className="cycle-setting-value">
+                    <span>{periodLength}天</span>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </div>
+
+                <p className="form-description">两次月经开始日大概间隔多久？</p>
+                <div className="cycle-setting-row" onClick={() => handleOpenPicker('cycle')}>
+                  <div className="cycle-setting-icon">📅</div>
+                  <div className="cycle-setting-info">
+                    <span className="cycle-setting-label">周期长度</span>
+                  </div>
+                  <div className="cycle-setting-value">
+                    <span>{cycleLength}天</span>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </div>
+
+                <p className="form-description">请输入出生年份</p>
+                <div className="cycle-setting-row">
+                  <div className="cycle-setting-icon">🎂</div>
+                  <div className="cycle-setting-info">
+                    <span className="cycle-setting-label">出生年份</span>
+                  </div>
+                  <input
+                    type="number"
+                    className="birth-year-input"
+                    value={birthYear}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value);
+                      if (!isNaN(value) && value >= 1900 && value <= new Date().getFullYear()) {
+                        setBirthYear(value);
+                      }
+                    }}
+                    min="1900"
+                    max={new Date().getFullYear()}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button className="submit-btn" onClick={handleSubmit}>
+                开始记录
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showPickerModal && (
+        <div className="picker-modal-overlay" onClick={() => setShowPickerModal(false)}>
+          <div className="picker-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="picker-header">
+              <button className="picker-cancel" onClick={() => setShowPickerModal(false)}>取消</button>
+              <h3 className="picker-title">
+                {pickerType === 'period' ? '选择经期天数' : '选择周期天数'}
+              </h3>
+              <button className="picker-confirm" onClick={handlePickerConfirm}>确定</button>
+            </div>
+            <div className="picker-container">
+              <div className="picker-items">
+                {(pickerType === 'period' ? periodOptions : cycleOptions).map((days) => (
+                  <button
+                    key={days}
+                    className={`picker-item ${(pickerType === 'period' ? tempPeriodLength : tempCycleLength) === days ? 'selected' : ''}`}
+                    onClick={() => {
+                      if (pickerType === 'period') {
+                        setTempPeriodLength(days);
+                      } else {
+                        setTempCycleLength(days);
+                      }
+                    }}
+                  >
+                    {days}天
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

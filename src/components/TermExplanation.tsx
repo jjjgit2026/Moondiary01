@@ -1,4 +1,4 @@
-import React from 'react';
+
 
 interface TermExplanationProps {
   term: 'period' | 'predicted' | 'ovulation' | 'ovulation-day';
@@ -10,7 +10,7 @@ const termData: Record<string, { title: string; color: string; bgColor: string; 
     title: '月经期',
     color: '#e91e63',
     bgColor: '#fce4ec',
-    description: '月经期，是指女性子宫内膜因激素的周期性变化而脱落，出现阴道出血的这个阶段，持续时间平均为4-6天，不过在2-8天都是正常的。'
+    description: '月经期，是指女性子宫内膜因激素的周期性变化而脱落，出现阴道出血的这个阶段，持续时间平均为4-6天，不过在2-7天都是正常的。'
   },
   'predicted': {
     title: '预测经期',

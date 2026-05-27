@@ -33,6 +33,7 @@ export default function RecordForm({ date, record, lastPeriodStart, onSave, onPe
   const [flow, setFlow] = useState<PeriodRecord['flow']>(record?.flow);
   const [symptoms, setSymptoms] = useState<string[]>(record?.symptoms || []);
   const [mood, setMood] = useState<PeriodRecord['mood']>(record?.mood);
+  const [weight, setWeight] = useState<string>(record?.weight?.toString() || '');
   const [note, setNote] = useState(record?.note || '');
 
   const isCurrentDatePeriod = record?.isPeriod || false;
@@ -55,6 +56,7 @@ export default function RecordForm({ date, record, lastPeriodStart, onSave, onPe
     setFlow(record?.flow);
     setSymptoms(record?.symptoms || []);
     setMood(record?.mood);
+    setWeight(record?.weight?.toString() || '');
     setNote(record?.note || '');
   }, [record]);
 
@@ -82,6 +84,13 @@ export default function RecordForm({ date, record, lastPeriodStart, onSave, onPe
 
     if (mood) {
       newRecord.mood = mood;
+    }
+
+    if (weight.trim()) {
+      const weightValue = parseFloat(weight);
+      if (!isNaN(weightValue)) {
+        newRecord.weight = weightValue;
+      }
     }
 
     if (note.trim()) {
@@ -182,7 +191,6 @@ export default function RecordForm({ date, record, lastPeriodStart, onSave, onPe
           <div className="section-title">
             <span className="icon">🤕</span>
             <span>症状</span>
-            <span className="add-btn" onClick={() => {}}>+</span>
           </div>
           <div className="options-group">
             {symptomsList.map((symptom) => (
@@ -218,6 +226,29 @@ export default function RecordForm({ date, record, lastPeriodStart, onSave, onPe
 
         <div className="form-section">
           <div className="section-title">
+            <span className="icon">⚖️</span>
+            <span>体重 (kg)</span>
+          </div>
+          <input
+            type="number"
+            className="weight-input"
+            placeholder="请输入体重"
+            value={weight}
+            onChange={(e) => {
+              const value = e.target.value;
+              const regex = /^\d*\.?\d{0,2}$/;
+              if (value === '' || regex.test(value)) {
+                setWeight(value);
+              }
+            }}
+            step="0.01"
+            min="0"
+            max="200"
+          />
+        </div>
+
+        <div className="form-section">
+          <div className="section-title">
             <span className="icon">📝</span>
             <span>备注</span>
           </div>
@@ -229,13 +260,11 @@ export default function RecordForm({ date, record, lastPeriodStart, onSave, onPe
           />
         </div>
 
-        {!canEndPeriod && (
-          <div className="modal-footer">
-            <button className="submit-btn" onClick={handleSubmit}>
-              保存
-            </button>
-          </div>
-        )}
+        <div className="modal-footer">
+          <button className="submit-btn" onClick={handleSubmit}>
+            保存
+          </button>
+        </div>
       </div>
     </div>
   );
