@@ -65,8 +65,22 @@ export default function Calendar({ records, settings, onDateClick, onMonthClick,
   const [selectedTerm, setSelectedTerm] = useState<TermType | null>(null);
 
   const lastPeriodDate = useMemo(() => {
-    const periodRecords = records.filter(r => r.isPeriod).sort((a, b) => b.date.localeCompare(a.date));
-    return periodRecords.length > 0 ? periodRecords[0].date : null;
+    const periodRecords = records.filter(r => r.isPeriod).sort((a, b) => a.date.localeCompare(b.date));
+    if (periodRecords.length === 0) return null;
+    
+    for (let i = periodRecords.length - 1; i >= 0; i--) {
+      const currentDate = parseDate(periodRecords[i].date);
+      if (i === 0) return periodRecords[i].date;
+      
+      const prevDate = parseDate(periodRecords[i - 1].date);
+      const diffDays = Math.floor((currentDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      if (diffDays > 1) {
+        return periodRecords[i].date;
+      }
+    }
+    
+    return periodRecords[0].date;
   }, [records]);
 
   const daysUntilNextPeriod = useMemo(() => {

@@ -6,6 +6,7 @@
   width: 90%;
   margin: 0 auto;
   max-width: 432px;
+  overflow-y: auto;
 }
 
 .header {
@@ -16,6 +17,7 @@
   width: 100%;
   max-width: 432px;
   margin: 0 auto;
+  border-radius: 0 0 16px 16px;
 }
 
 .header-content {
@@ -99,8 +101,9 @@
   border-radius: 16px;
   padding: 16px;
   margin: 16px;
-  margin-bottom: calc(16px + 80px + env(safe-area-inset-bottom));
+  margin-bottom: calc(4px + 80px + env(safe-area-inset-bottom));
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
 }
 
 .period-reminder {
@@ -367,9 +370,9 @@
 
 .legend {
   display: flex;
-  gap: 8px;
-  margin-top: 12px;
-  padding-top: 12px;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 8px;
   border-top: 1px solid #f0f0f0;
   justify-content: center;
   flex-wrap: nowrap;
@@ -639,11 +642,11 @@
 
 .modal-content {
   width: 100%;
-  max-width: 480px;
+  max-width: 432px;
   background: #fff;
   border-radius: 20px 20px 0 0;
-  padding: 20px;
-  padding-bottom: calc(20px + env(safe-area-inset-bottom));
+  padding: 16px;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
   animation: slideUp 0.3s;
 }
 
@@ -656,11 +659,11 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 14px;
 }
 
 .modal-header h3 {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   color: #333;
 }
@@ -679,7 +682,7 @@
 }
 
 .form-section {
-  margin-bottom: 20px;
+  margin-bottom: 14px;
 }
 
 .section-title {
@@ -714,10 +717,10 @@
 
 .toggle-btn {
   flex: 1;
-  padding: 12px;
+  padding: 10px;
   border: none;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   color: #666;
   background: transparent;
@@ -733,14 +736,14 @@
 .options-group {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
 }
 
 .option-btn {
-  padding: 8px 16px;
+  padding: 6px 12px;
   border: 1px solid #e0e0e0;
-  border-radius: 20px;
-  font-size: 14px;
+  border-radius: 16px;
+  font-size: 13px;
   color: #666;
   background: #fff;
   cursor: pointer;
@@ -770,11 +773,11 @@
 
 .note-input {
   width: 100%;
-  min-height: 80px;
-  padding: 12px;
+  min-height: 60px;
+  padding: 10px;
   border: 1px solid #e0e0e0;
-  border-radius: 12px;
-  font-size: 14px;
+  border-radius: 10px;
+  font-size: 13px;
   resize: none;
   font-family: inherit;
 }
@@ -786,11 +789,11 @@
 
 .weight-input {
   width: 100%;
-  height: 48px;
-  padding: 0 12px;
+  height: 40px;
+  padding: 0 10px;
   border: 1px solid #e0e0e0;
-  border-radius: 12px;
-  font-size: 14px;
+  border-radius: 10px;
+  font-size: 13px;
   box-sizing: border-box;
 }
 
@@ -883,17 +886,17 @@
 }
 
 .modal-footer {
-  margin-top: 20px;
+  margin-top: 14px;
 }
 
 .submit-btn {
   width: 100%;
-  padding: 14px;
+  padding: 12px;
   background: linear-gradient(135deg, #ff6b8a 0%, #ff8fa3 100%);
   border: none;
-  border-radius: 12px;
+  border-radius: 10px;
   color: #fff;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: opacity 0.2s;
@@ -2282,7 +2285,7 @@
 
 .picker-modal-content {
   width: 100%;
-  max-width: 480px;
+  max-width: 432px;
   margin: 0 auto;
   background: #fff;
   border-radius: 20px 20px 0 0;
@@ -2292,7 +2295,7 @@
 
 .modal-content.full-width {
   width: 100%;
-  max-width: 480px;
+  max-width: 432px;
   border-radius: 20px 20px 0 0;
   height: auto;
   max-height: 100vh;
@@ -2341,6 +2344,6 @@
   }
   
   .modal-content {
-    max-width: 480px;
+    max-width: 432px;
   }
 }
