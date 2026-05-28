@@ -31,15 +31,18 @@ export default function Settings({
   const [addUserError, setAddUserError] = useState('');
   
   const [showPickerModal, setShowPickerModal] = useState(false);
-  const [pickerType, setPickerType] = useState<'period' | 'cycle'>('period');
+  const [pickerType, setPickerType] = useState<'period' | 'cycle' | 'birthYear' | 'addUserBirthYear'>('period');
   const [tempPeriodLength, setTempPeriodLength] = useState(user.settings.periodLength);
   const [tempCycleLength, setTempCycleLength] = useState(user.settings.cycleLength);
+  const [tempBirthYear, setTempBirthYear] = useState(user.birthYear);
   const [addUserPeriodLength, setAddUserPeriodLength] = useState(5);
   const [addUserCycleLength, setAddUserCycleLength] = useState(28);
   const [addUserBirthYear, setAddUserBirthYear] = useState(new Date().getFullYear() - 16);
   
   const periodOptions = Array.from({ length: 14 }, (_, i) => 2 + i);
   const cycleOptions = Array.from({ length: 46 }, (_, i) => 15 + i);
+  const currentYear = new Date().getFullYear();
+  const birthYearOptions = Array.from({ length: 100 }, (_, i) => currentYear - i);
 
   const handleExport = () => {
     downloadData();
@@ -140,12 +143,14 @@ export default function Settings({
     }
   };
   
-  const handleOpenPicker = (type: 'period' | 'cycle') => {
+  const handleOpenPicker = (type: 'period' | 'cycle' | 'birthYear') => {
     setPickerType(type);
     if (type === 'period') {
       setTempPeriodLength(user.settings.periodLength || 5);
-    } else {
+    } else if (type === 'cycle') {
       setTempCycleLength(user.settings.cycleLength || 28);
+    } else {
+      setTempBirthYear(user.birthYear);
     }
     setShowPickerModal(true);
   };
@@ -153,18 +158,24 @@ export default function Settings({
   const handlePickerConfirm = () => {
     if (pickerType === 'period') {
       onSettingsChange({ ...user.settings, periodLength: tempPeriodLength });
-    } else {
+    } else if (pickerType === 'cycle') {
       onSettingsChange({ ...user.settings, cycleLength: tempCycleLength });
+    } else if (pickerType === 'birthYear') {
+      onUpdateBirthYear(tempBirthYear);
+    } else if (pickerType === 'addUserBirthYear') {
+      setAddUserBirthYear(tempBirthYear);
     }
     setShowPickerModal(false);
   };
   
-  const handleOpenAddUserPicker = (type: 'period' | 'cycle') => {
+  const handleOpenAddUserPicker = (type: 'period' | 'cycle' | 'birthYear') => {
     setPickerType(type);
     if (type === 'period') {
       setTempPeriodLength(addUserPeriodLength);
-    } else {
+    } else if (type === 'cycle') {
       setTempCycleLength(addUserCycleLength);
+    } else {
+      setTempBirthYear(addUserBirthYear);
     }
     setShowPickerModal(true);
   };
@@ -172,8 +183,10 @@ export default function Settings({
   const handleAddUserPickerConfirm = () => {
     if (pickerType === 'period') {
       setAddUserPeriodLength(tempPeriodLength);
-    } else {
+    } else if (pickerType === 'cycle') {
       setAddUserCycleLength(tempCycleLength);
+    } else if (pickerType === 'addUserBirthYear') {
+      setAddUserBirthYear(tempBirthYear);
     }
     setShowPickerModal(false);
   };
@@ -315,24 +328,17 @@ export default function Settings({
                 </div>
 
                 <p className="form-description">出生年份</p>
-                <div className="cycle-setting-row">
+                <div className="cycle-setting-row" onClick={() => handleOpenPicker('birthYear')}>
                   <div className="cycle-setting-icon">🎂</div>
                   <div className="cycle-setting-info">
                     <span className="cycle-setting-label">出生年份</span>
                   </div>
-                  <input
-                    type="number"
-                    className="birth-year-input"
-                    value={user.birthYear || new Date().getFullYear() - 16}
-                    onChange={(e) => {
-                      const value = parseInt(e.target.value);
-                      if (!isNaN(value) && value >= 1900 && value <= new Date().getFullYear()) {
-                        onUpdateBirthYear(value);
-                      }
-                    }}
-                    min="1900"
-                    max={new Date().getFullYear()}
-                  />
+                  <div className="cycle-setting-value">
+                    <span>{user.birthYear || new Date().getFullYear() - 16}年</span>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
                 </div>
               </div>
             </div>
@@ -445,25 +451,18 @@ export default function Settings({
                   </div>
                 </div>
 
-                <p className="form-description">请输入出生年份</p>
-                <div className="cycle-setting-row">
+                <p className="form-description">请选择出生年份</p>
+                <div className="cycle-setting-row" onClick={() => handleOpenAddUserPicker('birthYear')}>
                   <div className="cycle-setting-icon">🎂</div>
                   <div className="cycle-setting-info">
                     <span className="cycle-setting-label">出生年份</span>
                   </div>
-                  <input
-                    type="number"
-                    className="birth-year-input"
-                    value={addUserBirthYear}
-                    onChange={(e) => {
-                      const value = parseInt(e.target.value);
-                      if (!isNaN(value) && value >= 1900 && value <= new Date().getFullYear()) {
-                        setAddUserBirthYear(value);
-                      }
-                    }}
-                    min="1900"
-                    max={new Date().getFullYear()}
-                  />
+                  <div className="cycle-setting-value">
+                    <span>{addUserBirthYear}年</span>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
                 </div>
               </div>
             </div>
@@ -527,25 +526,32 @@ export default function Settings({
             <div className="picker-header">
               <button className="picker-cancel" onClick={() => setShowPickerModal(false)}>取消</button>
               <h3 className="picker-title">
-                {pickerType === 'period' ? '选择经期天数' : '选择周期天数'}
+                {pickerType === 'period' ? '选择经期天数' : 
+                 pickerType === 'cycle' ? '选择周期天数' : '选择出生年份'}
               </h3>
               <button className="picker-confirm" onClick={showAddUserModal ? handleAddUserPickerConfirm : handlePickerConfirm}>确定</button>
             </div>
             <div className="picker-container">
               <div className="picker-items">
-                {(pickerType === 'period' ? periodOptions : cycleOptions).map((days) => (
+                {(pickerType === 'period' ? periodOptions : 
+                  pickerType === 'cycle' ? cycleOptions : birthYearOptions).map((value) => (
                   <button
-                    key={days}
-                    className={`picker-item ${(pickerType === 'period' ? tempPeriodLength : tempCycleLength) === days ? 'selected' : ''}`}
+                    key={value}
+                    className={`picker-item ${
+                      (pickerType === 'period' ? tempPeriodLength : 
+                       pickerType === 'cycle' ? tempCycleLength : tempBirthYear) === value ? 'selected' : ''
+                    }`}
                     onClick={() => {
                       if (pickerType === 'period') {
-                        setTempPeriodLength(days);
+                        setTempPeriodLength(value);
+                      } else if (pickerType === 'cycle') {
+                        setTempCycleLength(value);
                       } else {
-                        setTempCycleLength(days);
+                        setTempBirthYear(value);
                       }
                     }}
                   >
-                    {days}天
+                    {pickerType === 'birthYear' || pickerType === 'addUserBirthYear' ? `${value}年` : `${value}天`}
                   </button>
                 ))}
               </div>

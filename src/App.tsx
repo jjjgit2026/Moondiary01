@@ -221,41 +221,39 @@ export default function App() {
             </header>
           )}
 
-          <main className="main-content">
-            {activeTab === 'calendar' && !showYearCalendar && (
-              <Calendar 
-                records={currentUser.records} 
-                settings={currentUser.settings} 
-                onDateClick={handleDateClick}
-                onMonthClick={() => setShowYearCalendar(true)}
-                canShowPrediction={canShowPrediction}
-              />
-            )}
-            {activeTab === 'calendar' && showYearCalendar && (
-              <YearCalendar
-                records={currentUser.records}
-                currentYear={new Date().getFullYear()}
-                onBack={() => setShowYearCalendar(false)}
-              />
-            )}
-            {activeTab === 'analysis' && currentUser && (
-              <Analysis 
-                records={currentUser.records || []} 
-                settings={currentUser.settings || { periodLength: 5, cycleLength: 28 }} 
-                birthYear={currentUser.birthYear || new Date().getFullYear() - 16}
-              />
-            )}
-            {activeTab === 'settings' && (
-              <Settings
-                user={currentUser}
-                onSettingsChange={handleSettingsChange}
-                onUpdateNickname={handleUpdateNickname}
-                onUpdateBirthYear={handleUpdateBirthYear}
-                onSwitchUser={handleSwitchUser}
-                onCreateUser={handleCreateUser}
-              />
-            )}
-          </main>
+          {activeTab === 'calendar' && !showYearCalendar && (
+            <Calendar 
+              records={currentUser.records} 
+              settings={currentUser.settings} 
+              onDateClick={handleDateClick}
+              onMonthClick={() => setShowYearCalendar(true)}
+              canShowPrediction={canShowPrediction}
+            />
+          )}
+          {activeTab === 'calendar' && showYearCalendar && (
+            <YearCalendar
+              records={currentUser.records}
+              currentYear={new Date().getFullYear()}
+              onBack={() => setShowYearCalendar(false)}
+            />
+          )}
+          {activeTab === 'analysis' && currentUser && (
+            <Analysis 
+              records={currentUser.records || []} 
+              settings={currentUser.settings || { periodLength: 5, cycleLength: 28 }} 
+              birthYear={currentUser.birthYear || new Date().getFullYear() - 16}
+            />
+          )}
+          {activeTab === 'settings' && (
+            <Settings
+              user={currentUser}
+              onSettingsChange={handleSettingsChange}
+              onUpdateNickname={handleUpdateNickname}
+              onUpdateBirthYear={handleUpdateBirthYear}
+              onSwitchUser={handleSwitchUser}
+              onCreateUser={handleCreateUser}
+            />
+          )}
 
         </>
       )}
