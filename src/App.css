@@ -787,6 +787,15 @@
   border-color: #ff6b8a;
 }
 
+.weight-waist-container {
+  display: flex;
+  gap: 10px;
+}
+
+.weight-waist-container .input-group {
+  flex: 1;
+}
+
 .weight-input {
   width: 100%;
   height: 40px;
@@ -800,6 +809,21 @@
 .weight-input:focus {
   outline: none;
   border-color: #ff6b8a;
+}
+
+.waist-input {
+  width: 100%;
+  height: 40px;
+  padding: 0 10px;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  font-size: 13px;
+  box-sizing: border-box;
+}
+
+.waist-input:focus {
+  outline: none;
+  border-color: #1976d2;
 }
 
 .weight-reminder {

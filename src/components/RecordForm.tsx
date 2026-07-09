@@ -34,6 +34,7 @@ export default function RecordForm({ date, record, lastPeriodStart, onSave, onPe
   const [symptoms, setSymptoms] = useState<string[]>(record?.symptoms || []);
   const [mood, setMood] = useState<PeriodRecord['mood']>(record?.mood);
   const [weight, setWeight] = useState<string>(record?.weight?.toString() || '');
+  const [waistline, setWaistline] = useState<string>(record?.waistline?.toString() || '');
   const [note, setNote] = useState(record?.note || '');
 
   const isCurrentDatePeriod = record?.isPeriod || false;
@@ -57,6 +58,7 @@ export default function RecordForm({ date, record, lastPeriodStart, onSave, onPe
     setSymptoms(record?.symptoms || []);
     setMood(record?.mood);
     setWeight(record?.weight?.toString() || '');
+    setWaistline(record?.waistline?.toString() || '');
     setNote(record?.note || '');
   }, [record]);
 
@@ -90,6 +92,13 @@ export default function RecordForm({ date, record, lastPeriodStart, onSave, onPe
       const weightValue = parseFloat(weight);
       if (!isNaN(weightValue)) {
         newRecord.weight = weightValue;
+      }
+    }
+
+    if (waistline.trim()) {
+      const waistlineValue = parseFloat(waistline);
+      if (!isNaN(waistlineValue)) {
+        newRecord.waistline = waistlineValue;
       }
     }
 
@@ -227,24 +236,46 @@ export default function RecordForm({ date, record, lastPeriodStart, onSave, onPe
         <div className="form-section">
           <div className="section-title">
             <span className="icon">⚖️</span>
-            <span>体重 (kg)</span>
+            <span>体重/腰围</span>
           </div>
-          <input
-            type="number"
-            className="weight-input"
-            placeholder="请输入体重"
-            value={weight}
-            onChange={(e) => {
-              const value = e.target.value;
-              const regex = /^\d*\.?\d{0,2}$/;
-              if (value === '' || regex.test(value)) {
-                setWeight(value);
-              }
-            }}
-            step="0.01"
-            min="0"
-            max="200"
-          />
+          <div className="weight-waist-container">
+            <div className="input-group">
+              <input
+                type="number"
+                className="weight-input"
+                placeholder="体重 (kg)"
+                value={weight}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  const regex = /^\d*\.?\d{0,2}$/;
+                  if (value === '' || regex.test(value)) {
+                    setWeight(value);
+                  }
+                }}
+                step="0.01"
+                min="0"
+                max="200"
+              />
+            </div>
+            <div className="input-group">
+              <input
+                type="number"
+                className="waist-input"
+                placeholder="腰围 (cm)"
+                value={waistline}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  const regex = /^\d*\.?\d{0,2}$/;
+                  if (value === '' || regex.test(value)) {
+                    setWaistline(value);
+                  }
+                }}
+                step="0.01"
+                min="0"
+                max="200"
+              />
+            </div>
+          </div>
         </div>
 
         <div className="form-section">

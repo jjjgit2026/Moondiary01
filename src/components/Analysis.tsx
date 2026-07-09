@@ -103,6 +103,16 @@ export default function Analysis({ records, settings, birthYear }: AnalysisProps
       .sort((a, b) => a.date.localeCompare(b.date));
   }, [records]);
 
+  const waistlineRecords = useMemo(() => {
+    return records
+      .filter(r => r.waistline !== undefined && r.waistline !== null)
+      .map(r => ({
+        date: r.date,
+        waistline: r.waistline as number
+      }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+  }, [records]);
+
   const weightTrend = useMemo(() => {
     if (weightRecords.length < 2) return null;
     
@@ -417,11 +427,11 @@ export default function Analysis({ records, settings, birthYear }: AnalysisProps
         </div>
       </div>
 
-      {weightRecords.length > 0 && (
+      {(weightRecords.length > 0 || waistlineRecords.length > 0) && (
         <div className="analysis-section">
           <div className="section-title">
             <span className="icon">⚖️</span>
-            <span>体重变化</span>
+            <span>身体指标变化</span>
           </div>
 
           {weightReminder && (
@@ -434,41 +444,67 @@ export default function Analysis({ records, settings, birthYear }: AnalysisProps
           <div className="weight-chart">
             <div className="chart-scroll-container">
               <div className="chart-wrapper">
-                {weightTrend && weightTrend.records.length > 1 && (
+                {(weightTrend && weightTrend.records.length > 1) || waistlineRecords.length >= 2 ? (
                   <svg 
                     className="line-chart" 
-                    viewBox={`0 0 ${Math.max(320, weightTrend.records.length * 70)} 180`} 
+                    viewBox={`0 0 ${Math.max(320, Math.max(weightTrend?.records.length || 0, waistlineRecords.length) * 70)} 200`} 
                     preserveAspectRatio="none"
                   >
                     {(() => {
-                      const records = weightTrend.records;
-                      const chartWidth = Math.max(300, records.length * 70);
-                      const chartHeight = 160;
-                      const padding = { top: 20, right: 20, bottom: 55, left: 20 };
+                      const weightData = weightTrend?.records || [];
+                      const waistData = waistlineRecords;
+                      const maxRecords = Math.max(weightData.length, waistData.length);
+                      const chartWidth = Math.max(300, maxRecords * 70);
+                      const chartHeight = 180;
+                      const padding = { top: 20, right: 60, bottom: 55, left: 20 };
                       const innerWidth = chartWidth - padding.left - padding.right;
                       const innerHeight = chartHeight - padding.top - padding.bottom;
                       
-                      const weights = records.map(r => r.weight);
-                      const minW = Math.floor(Math.min(...weights)) - 1;
-                      const maxW = Math.ceil(Math.max(...weights)) + 1;
-                      const range = maxW - minW || 2;
+                      const allWeights = weightData.map(r => r.weight);
+                      const minWeight = allWeights.length > 0 ? Math.floor(Math.min(...allWeights)) - 1 : 0;
+                      const maxWeight = allWeights.length > 0 ? Math.ceil(Math.max(...allWeights)) + 1 : 100;
+                      const weightRange = maxWeight - minWeight || 2;
                       
-                      const pointX = (index: number) => padding.left + (index / (records.length - 1)) * innerWidth;
-                      const pointY = (weight: number) => padding.top + innerHeight - ((weight - minW) / range) * innerHeight;
+                      const allWaistlines = waistData.map(r => r.waistline);
+                      const minWaistline = allWaistlines.length > 0 ? Math.floor(Math.min(...allWaistlines)) - 2 : 0;
+                      const maxWaistline = allWaistlines.length > 0 ? Math.ceil(Math.max(...allWaistlines)) + 2 : 100;
+                      const waistlineRange = maxWaistline - minWaistline || 2;
                       
-                      const points = records.map((r, i) => {
-                        const x = pointX(i);
-                        const y = pointY(r.weight);
+                      const pointX = (index: number, total: number) => padding.left + (index / (total - 1)) * innerWidth;
+                      const pointYWeight = (weight: number) => padding.top + innerHeight - ((weight - minWeight) / weightRange) * innerHeight;
+                      const pointYWaistline = (waistline: number) => padding.top + innerHeight - ((waistline - minWaistline) / waistlineRange) * innerHeight;
+                      
+                      const weightPoints = weightData.map((r, i) => {
+                        const x = pointX(i, weightData.length);
+                        const y = pointYWeight(r.weight);
                         return `${x},${y}`;
                       }).join(' ');
                       
-                      const areaPoints = `M ${padding.left},${padding.top + innerHeight} L ${points} L ${padding.left + innerWidth},${padding.top + innerHeight} Z`;
+                      const waistPoints = waistData.map((r, i) => {
+                        const x = pointX(i, waistData.length);
+                        const y = pointYWaistline(r.waistline);
+                        return `${x},${y}`;
+                      }).join(' ');
+                      
+                      const weightAreaPoints = weightData.length > 0 ? `M ${padding.left},${padding.top + innerHeight} L ${weightPoints} L ${padding.left + innerWidth},${padding.top + innerHeight} Z` : '';
                       
                       const gridLines = [];
                       const gridCount = 4;
                       for (let i = 0; i <= gridCount; i++) {
                         const y = padding.top + (i / gridCount) * innerHeight;
                         gridLines.push(y);
+                      }
+                      
+                      const yLabelsWeight: number[] = [];
+                      for (let i = 0; i <= gridCount; i++) {
+                        const value = maxWeight - (i / gridCount) * weightRange;
+                        yLabelsWeight.push(Math.round(value));
+                      }
+                      
+                      const yLabelsWaistline: number[] = [];
+                      for (let i = 0; i <= gridCount; i++) {
+                        const value = maxWaistline - (i / gridCount) * waistlineRange;
+                        yLabelsWaistline.push(Math.round(value));
                       }
                       
                       return (
@@ -478,11 +514,15 @@ export default function Analysis({ records, settings, birthYear }: AnalysisProps
                               <stop offset="0%" stopColor="#ff6b8a" stopOpacity="0.2" />
                               <stop offset="100%" stopColor="#ff6b8a" stopOpacity="0" />
                             </linearGradient>
+                            <linearGradient id="waistGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                              <stop offset="0%" stopColor="#1976d2" stopOpacity="0.2" />
+                              <stop offset="100%" stopColor="#1976d2" stopOpacity="0" />
+                            </linearGradient>
                           </defs>
                           
                           {gridLines.map((y, i) => (
                             <line 
-                              key={i}
+                              key={`grid-${i}`}
                               x1={padding.left} 
                               y1={y} 
                               x2={padding.left + innerWidth} 
@@ -509,44 +549,132 @@ export default function Analysis({ records, settings, birthYear }: AnalysisProps
                             stroke="#e0e0e0" 
                             strokeWidth="1" 
                           />
-                          
-                          <path d={areaPoints} fill="url(#weightGradient)" />
-                          
-                          <polyline 
-                            points={points} 
-                            fill="none" 
-                            stroke="#ff6b8a" 
-                            strokeWidth="2" 
-                            strokeLinecap="round" 
-                            strokeLinejoin="round" 
+                          <line 
+                            x1={padding.left + innerWidth} 
+                            y1={padding.top} 
+                            x2={padding.left + innerWidth} 
+                            y2={padding.top + innerHeight} 
+                            stroke="#e0e0e0" 
+                            strokeWidth="1" 
                           />
                           
-                          {records.map((r, i) => {
-                            const x = pointX(i);
-                            const y = pointY(r.weight);
-                            const date = parseDate(r.date);
-                            const dateLabel = `${date.getMonth() + 1}/${date.getDate()}`;
-                            return (
-                              <g key={i}>
-                                <circle cx={x} cy={y} r="4" fill="#ff6b8a" />
-                                <text x={x} y={y - 8} textAnchor="middle" fontSize="10" fill="#ff6b8a">
-                                  {r.weight}
-                                </text>
-                                <text x={x} y={padding.top + innerHeight + 12} textAnchor="middle" fontSize="10" fill="#999">
+                          {weightData.length > 0 && (
+                            <>
+                              <path d={weightAreaPoints} fill="url(#weightGradient)" />
+                              
+                              <polyline 
+                                points={weightPoints} 
+                                fill="none" 
+                                stroke="#ff6b8a" 
+                                strokeWidth="2" 
+                                strokeLinecap="round" 
+                                strokeLinejoin="round" 
+                              />
+                              
+                              {weightData.map((r, i) => {
+                                const x = pointX(i, weightData.length);
+                                const y = pointYWeight(r.weight);
+                                return (
+                                  <g key={`weight-${i}`}>
+                                    <circle cx={x} cy={y} r="4" fill="#ff6b8a" />
+                                    <text x={x} y={y - 8} textAnchor="middle" fontSize="10" fill="#ff6b8a">
+                                      {r.weight}
+                                    </text>
+                                  </g>
+                                );
+                              })}
+                            </>
+                          )}
+                          
+                          {waistData.length >= 2 && (
+                            <>
+                              <polyline 
+                                points={waistPoints} 
+                                fill="none" 
+                                stroke="#1976d2" 
+                                strokeWidth="2" 
+                                strokeLinecap="round" 
+                                strokeLinejoin="round" 
+                                strokeDasharray="4,2"
+                              />
+                              
+                              {waistData.map((r, i) => {
+                                const x = pointX(i, waistData.length);
+                                const y = pointYWaistline(r.waistline);
+                                return (
+                                  <g key={`waist-${i}`}>
+                                    <circle cx={x} cy={y} r="4" fill="#1976d2" />
+                                    <text x={x} y={y - 8} textAnchor="middle" fontSize="10" fill="#1976d2">
+                                      {r.waistline}
+                                    </text>
+                                  </g>
+                                );
+                              })}
+                            </>
+                          )}
+                          
+                          {weightData.length > 0 && gridLines.map((y, i) => (
+                            <text 
+                              key={`y-label-weight-${i}`}
+                              x={padding.left - 5} 
+                              y={y + 4} 
+                              textAnchor="end" 
+                              fontSize="9" 
+                              fill="#ff6b8a"
+                            >
+                              {yLabelsWeight[i]}
+                            </text>
+                          ))}
+                          
+                          {waistData.length >= 2 && gridLines.map((y, i) => (
+                            <text 
+                              key={`y-label-waist-${i}`}
+                              x={padding.left + innerWidth + 5} 
+                              y={y + 4} 
+                              textAnchor="start" 
+                              fontSize="9" 
+                              fill="#1976d2"
+                            >
+                              {yLabelsWaistline[i]}
+                            </text>
+                          ))}
+                          
+                          {(weightData.length > 0 || waistData.length >= 2) && (
+                            <>
+                              <text x={padding.left - 5} y={padding.top - 8} textAnchor="end" fontSize="9" fill="#ff6b8a">kg</text>
+                              {waistData.length >= 2 && (
+                                <text x={padding.left + innerWidth + 5} y={padding.top - 8} textAnchor="start" fontSize="9" fill="#1976d2">cm</text>
+                              )}
+                            </>
+                          )}
+                          
+                          {(() => {
+                            const displayDates = weightData.length > 0 ? weightData : waistData;
+                            return displayDates.map((r, i) => {
+                              const x = pointX(i, displayDates.length);
+                              const date = parseDate(r.date);
+                              const dateLabel = `${date.getMonth() + 1}/${date.getDate()}`;
+                              return (
+                                <text 
+                                  key={`date-${i}`}
+                                  x={x} 
+                                  y={padding.top + innerHeight + 12} 
+                                  textAnchor="middle" 
+                                  fontSize="10" 
+                                  fill="#999"
+                                >
                                   {dateLabel}
                                 </text>
-                              </g>
-                            );
-                          })}
+                              );
+                            });
+                          })()}
                         </>
                       );
                     })()}
                   </svg>
-                )}
-                
-                {(!weightTrend || weightTrend.records.length <= 1) && (
+                ) : (
                   <div className="chart-no-data">
-                    至少需要2个体重记录才能显示趋势图
+                    至少需要2个记录才能显示趋势图
                   </div>
                 )}
               </div>

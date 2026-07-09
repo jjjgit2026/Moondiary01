@@ -5,6 +5,7 @@ export interface PeriodRecord {
   symptoms?: string[];
   mood?: 'happy' | 'neutral' | 'sad' | 'angry' | 'anxious' | 'tired';
   weight?: number;
+  waistline?: number;
   note?: string;
 }
 
